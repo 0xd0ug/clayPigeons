@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from probeType import Probe
 from matchType import Match
 from clayPigeonType import ClayPigeon
