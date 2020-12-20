@@ -4,9 +4,9 @@
 
 ClayPigeons is a simple program I wrote to help me with my service detection research. It parses nmap's `nmap-service-probes` file and starts sub-processes with listening sockets that respond in such a way that, if you run an nmap scan against the server, nmap should respond as if various random services are running on the system.
 
-Start clayPigeons from the Linux command line as `python3 clayPigeons.py`.
+Start clayPigeons from the Linux command line as `python3 clayPigeons.py`. Use CTRL-C to exit.
 
-### Prerequisities
+### Prerequisites
 
 ClayPigeons was developed to run on a Mac or Linux system. It uses Python3 and requires the exrex library, as well as a current installation of nmap. You'll need to edit the path to nmap-service-probes in the source code to point to wherever that file is on your system.
 
@@ -17,6 +17,16 @@ I created this for educational purposes only, specifically to help me conduct re
 I have no affiliation with nmap other than being a really big fan. This tool requires a file from nmap, and the best way to get that file is to install nmap itself.
 
 This program is a work in progress, in the early development stages, and will be modified to adapt to my research. I only made this repo public because a colleague saw the output and wanted to use it. It does not properly emulate all services, has confusing debugging-style output, and may have other issues as well. :-) Use at your own risk!
+
+### Limitations
+
+A new Python process is created for each listener. There must be a better way to do this, but it works fine for me right now.
+
+Exrex doesn't handle all the regular expressions and will occasionally print an error message beginning with `[!] cannot handle expression`.
+
+SSL services are not yet implemented.
+
+The list of limitations in the README file is incomplete.
 
 ### Sample Output
 

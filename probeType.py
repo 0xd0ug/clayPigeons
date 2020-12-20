@@ -25,8 +25,10 @@ class Probe:
         return random.choice(self.matches)
 
     def getRandomPort(self):
+        # Randomly choose from an expected port
         if self.ports != []:
             port = random.choice(self.ports)
+        # And if no ports are specified, just pick one in a high range.
         else:
             port = random.randint(10000,11000)
         # usedPorts.append(port)
