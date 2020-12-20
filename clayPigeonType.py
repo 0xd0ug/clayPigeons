@@ -57,10 +57,8 @@ class ClayPigeon:
                     pass
                 self.s.close()
                 continue
-            dataString = data
-
             # If this is a null probe or if the input matches the signature, send the response
-            if probe.probename == 'NULL' or self.same(dataString, probe.probestring):
+            if probe.probename == 'NULL' or self.same(data, probe.probestring):
                 try:
                     if probe.protocol == 'TCP':
                         connection.send(self.probeResponse)
