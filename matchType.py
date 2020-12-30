@@ -1,5 +1,6 @@
 import exrex
 
+
 class Match:
 
     def __init__(self, service, pattern, versioninfo, softmatch):
@@ -19,4 +20,4 @@ class Match:
     def example(self):
         # Generate a candidate that matches the expected signature
         sample = exrex.getone(self.pattern)
-        return bytes(sample,'latin-1')
+        return bytes(sample, 'latin-1')

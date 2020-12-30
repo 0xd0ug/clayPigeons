@@ -1,27 +1,27 @@
 from socket import socket, AF_INET, SOCK_STREAM, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR
-from time import sleep, time
+
 
 class ClayPigeon:
 
     @staticmethod
-    def same(x,y):
-        return x==y
+    def same(x, y):
+        return x == y
 
-    def __init__(self, probe): # Starts and runs listener for clay pigeon
-        self.match = probe.getRandomMatch()
-        self.port = probe.getRandomPort()
+    def __init__(self, probe, match, port):  # Starts and runs listener for clay pigeon
+        self.match = match
+        self.port = port
         self.probeResponse = self.match.example()
         firstOpen = True
-        portString = probe.protocol+"/"+str(self.port)
+        portString = probe.protocol + "/" + str(self.port) + ':' + probe.probename
         while True:
             if probe.protocol == 'TCP':
-                self.s = socket(AF_INET,SOCK_STREAM)
+                self.s = socket(AF_INET, SOCK_STREAM)
             else:
                 self.s = socket(AF_INET, SOCK_DGRAM)
             self.s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
             # Try to get the port open
             try:
-                self.s.bind(('127.0.0.1', self.port)) # Binds only to localhost.
+                self.s.bind(('127.0.0.1', self.port))  # Binds only to localhost.
             except PermissionError:
                 # Probably trying to open port <=1024 without root privileges
                 self.s.close()
@@ -34,7 +34,7 @@ class ClayPigeon:
                 break
             if firstOpen:
                 # Print port info if this is the first time through (this loop repeats for each connection)
-                print(probe.protocol+"/"+str(self.port))
+                print(portString)
                 firstOpen = False
             if probe.protocol == 'TCP':
                 # TCP port means you need to listen, UDP just takes data.
@@ -45,10 +45,10 @@ class ClayPigeon:
                     connection, address = self.s.accept()
                     if probe.probename != 'NULL':
                         data = connection.recv(1536)
-                        print(portString + ": Received",data)
+                        print(portString + ": Received", data)
                 else:
                     data, address = self.s.recvfrom(1536)
-                    print(portString + ": Received",data,"from",address)
+                    print(portString + ": Received", data, "from", address)
             except ConnectionResetError:
                 connection.close()
                 try:
@@ -62,10 +62,10 @@ class ClayPigeon:
                 try:
                     if probe.protocol == 'TCP':
                         connection.send(self.probeResponse)
-                        print(portString +": Response", self.probeResponse)
+                        print("*" + portString + ": Response", self.probeResponse)
                     else:
                         self.s.sendto(self.probeResponse, address)
-                        print(portString + ": Response", self.probeResponse)
+                        print("*" + portString + ": Response", self.probeResponse)
                 except OSError:
                     pass
                 # Clean up by getting anything else from the port.
