@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
+import subprocess
 
 from probeType import Probe
 from matchType import Match
-from clayPigeonType import ClayPigeon
+from cpType import ClayPigeon
 from multiprocessing import Process
 import random
 import os
@@ -41,8 +42,24 @@ def loadServiceDefs():
             newVal = literal_eval('"' + newVal.replace('"', '\\"') + '"')
         return bytes(newVal, "latin-1")
 
+    def findProbesFile():  # Find the nmap-service-probes file
+        checkme = ['./', '/usr/share/nmap/', '/usr/share/nmap/']
+        filename = 'nmap-service-probes'
+        for directory in checkme:
+            path = directory + filename
+            print("Checking", path)
+            if os.path.exists(path):
+                print("Returning", path)
+                return path
+        located = subprocess.check_output(['locate', filename])
+        print(len(located))
+        if len(located) == 0:
+            raise Exception('Cannot locate ' + filename + ' in filesystem.')
+        else:
+            return located.decode('latin-1').partition('\n')[0]
+
     probes = []
-    filename = "/usr/local/share/nmap/nmap-service-probes"  # Change this to fit your system (use locate)
+    filename = findProbesFile()
     with open(filename) as f:
         data = f.readlines()
         x = 0
@@ -93,7 +110,7 @@ def createConfig(probes):
 
 
 def saveConfig(config):
-    filename = "clayPigeon.conf"
+    filename = "cp.conf"
     pigeonList = []
     f = open(filename, "w")
     for x in config:
@@ -105,7 +122,7 @@ def saveConfig(config):
 def readConfig(probes):
     # Attempt to read a config if it exists, otherwise return an empty list
     pigeonList = []
-    filename = "clayPigeon.conf"
+    filename = "cp.conf"
     if os.path.exists(filename):
         f = open(filename, "r")
         rawData = f.read()
