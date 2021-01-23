@@ -47,12 +47,9 @@ def loadServiceDefs():
         filename = 'nmap-service-probes'
         for directory in checkme:
             path = directory + filename
-            print("Checking", path)
             if os.path.exists(path):
-                print("Returning", path)
                 return path
         located = subprocess.check_output(['locate', filename])
-        print(len(located))
         if len(located) == 0:
             raise Exception('Cannot locate ' + filename + ' in filesystem.')
         else:
