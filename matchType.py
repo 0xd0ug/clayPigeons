@@ -19,5 +19,5 @@ class Match:
 
     def example(self):
         # Generate a candidate that matches the expected signature
-        sample = exrex.getone(self.pattern)
+        sample = exrex.getone(self.pattern,5)
         return bytes(sample, 'latin-1')

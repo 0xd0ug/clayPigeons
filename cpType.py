@@ -5,14 +5,20 @@ class ClayPigeon:
 
     @staticmethod
     def same(x, y):
-        return x == y
+        a = x.decode('latin-1').encode()
+        b = y.decode('latin-1').encode()
+        return a == b
+
+    def __str__(self):
+        return self.probe.protocol + "/" + str(self.port) + ':' + ("softmatch " if self.match.softmatch else "match ") + self.probe.probename
 
     def __init__(self, probe, match, port):  # Starts and runs listener for clay pigeon
         self.match = match
         self.port = port
+        self.probe = probe
         self.probeResponse = self.match.example()
         firstOpen = True
-        portString = probe.protocol + "/" + str(self.port) + ':' + probe.probename
+        portString = str(self)
         while True:
             if probe.protocol == 'TCP':
                 self.s = socket(AF_INET, SOCK_STREAM)
@@ -58,7 +64,7 @@ class ClayPigeon:
                 self.s.close()
                 continue
             # If this is a null probe or if the input matches the signature, send the response
-            if probe.probename == 'NULL' or self.same(data, probe.probestring):
+            if probe.probename == 'NULL' or self.same(data, self.probe.probestring):
                 try:
                     if probe.protocol == 'TCP':
                         connection.send(self.probeResponse)

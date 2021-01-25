@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import subprocess
+from time import sleep
 
 from probeType import Probe
 from matchType import Match
@@ -33,14 +34,18 @@ def loadServiceDefs():
         stringEnd = rawMatch[2:].find(delim) + 2
         return rawMatch[2:stringEnd], rawMatch[stringEnd + 2:].rstrip('\n')
 
-    def stringToProbe(rawProbe):  # Cleans up the probe string in nmap-service-probes
+    def stringToProbe(rawProbe, debug = False):  # Cleans up the probe string in nmap-service-probes
         assert rawProbe[0] == 'q'
         delim = rawProbe[1]
         stringEnd = rawProbe[2:].find(delim) + 2
         newVal = rawProbe[2:stringEnd]
-        if len(newVal) > 0:
-            newVal = literal_eval('"' + newVal.replace('"', '\\"') + '"')
-        return bytes(newVal, "latin-1")
+        newVal = newVal.replace(r"\0",r"\x00")
+        returnVal = literal_eval('"' + newVal.replace('"', '\\"') + '"').encode('latin-1')
+        print(len(newVal),len(returnVal))
+        if debug:
+            print(newVal)
+            print(returnVal)
+        return returnVal
 
     def findProbesFile():  # Find the nmap-service-probes file
         checkme = ['./', '/usr/share/nmap/', '/usr/share/nmap/']
@@ -63,7 +68,10 @@ def loadServiceDefs():
         while x < len(data):
             if data[x][0:6] == 'Probe ':
                 probe = data[x].split(maxsplit=3)  # Determine protocol, probe name, and string sent as probe
-                probeQuery = stringToProbe(probe[3])
+                if probe[2] != "oracle-tns":
+                    probeQuery = stringToProbe(probe[3])
+                else:
+                    probeQuery = stringToProbe(probe[3],True)
                 x += 1
                 matches = []
                 ports = []
@@ -88,7 +96,11 @@ def loadServiceDefs():
 
 
 def createConfig(probes):
-    numberofClayPigeons = 20
+
+    def sortFunc(e):
+        return e["port"]
+
+    numberofClayPigeons = 30
     config = readConfig(probes)  # Attempt to read config if one exists,
     if config == []:  # Otherwise create a random config
         portList = []
@@ -103,6 +115,10 @@ def createConfig(probes):
                     portList = [-1]
             portList.append(port)
             config.append({"probe": probe, "match": match, "port": port})
+            config.sort(key=sortFunc)
+        print("Created config with", len(config), "clayPigeons.")
+    else:
+        print("Loaded config with", len(config), "clayPigeons.")
     return config
 
 
@@ -139,14 +155,15 @@ def readConfig(probes):
 
 
 def makeClayPigeon(probe, match, port):  # Created for multiProcessing
-    return ClayPigeon(probe, match, port)
-
+    try:
+      return ClayPigeon(probe, match, port)
+    except KeyboardInterrupt:
+        pass
 
 if __name__ == '__main__':
     probes = loadServiceDefs()
     z = []
     config = createConfig(probes)
-    print(config)
     saveConfig(config)
     numberOfClayPigeons = len(config)
     for x in range(numberOfClayPigeons):
@@ -157,3 +174,6 @@ if __name__ == '__main__':
         proc = Process(target=makeClayPigeon, args=(probe, match, port,))
         z.append(proc)
         z[x].start()
+        sleep(.01) # Makes pigeons start in order so the list appears sorted
+
+
