@@ -41,7 +41,6 @@ def loadServiceDefs():
         newVal = rawProbe[2:stringEnd]
         newVal = newVal.replace(r"\0",r"\x00")
         returnVal = literal_eval('"' + newVal.replace('"', '\\"') + '"').encode('latin-1')
-        print(len(newVal),len(returnVal))
         if debug:
             print(newVal)
             print(returnVal)

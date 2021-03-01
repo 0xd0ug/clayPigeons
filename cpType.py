@@ -75,7 +75,7 @@ class ClayPigeon:
                 except OSError:
                     pass
                 # Clean up by getting anything else from the port.
-                while True:
+                '''while True:
                     try:
                         if probe.protocol == 'TCP':
                             getInput = connection.recv(1024)
@@ -84,8 +84,9 @@ class ClayPigeon:
                     except OSError:
                         break
                     if not getInput:
-                        break
-                connection.close()
+                        break'''
+                if probe.protocol == 'TCP':
+                    connection.close()
                 try:
                     self.s.shutdown(1)
                 except OSError:
