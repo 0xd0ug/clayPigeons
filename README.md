@@ -8,6 +8,7 @@ Start clayPigeons from the Linux command line as `python3 clayPigeons.py`. Use C
 
 ClayPigeons now attempts to locate the `nmap-service-probes` file in its own directory, then in common locations and finally using the OS command locate. It will throw an exception if it can't find the file. Also, ClayPigeons saves its configuration in a file `cp.conf`. If you run ClayPigeons a second time with this file in the directory, it will load the configuration from that file. This will allow you to replay experiments. Deleting the `cp.conf` file will cause clayPigeons to create a new random configuration.
 
+A new experimental feature has been added that lets the user have some control over which services are chosen. By adding strings to the `onlyMatch` variable, clayPigeons will only load matches that contain the strings specified. So, for example, adding "http" to that list will only add probes with the word "http" in their lines. Changing this and then using an old config file, or specifying a filter for which there are too few matches can cause the program to fail.
 ### Prerequisites
 
 ClayPigeons was developed to run on a Mac or Linux system. It uses Python3 and requires the exrex library, as well as a current installation of nmap. You'll need to edit the path to nmap-service-probes in the source code to point to wherever that file is on your system.

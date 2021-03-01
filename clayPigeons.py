@@ -15,7 +15,7 @@ import json
 def loadServiceDefs():
     onlyMatch = []  # Only match probes in this list
     # onlyMatch = ["Apache","mysql"]
-    onlyMatch = ["oracle"]
+    # onlyMatch = ["oracle"]
 
     def stringToPorts(stringports):  # Translates nmap-style port specs to a list of ports
         ports = []
