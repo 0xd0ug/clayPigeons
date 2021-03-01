@@ -13,6 +13,10 @@ import json
 
 
 def loadServiceDefs():
+    onlyMatch = []  # Only match probes in this list
+    # onlyMatch = ["Apache","mysql"]
+    onlyMatch = ["oracle"]
+
     def stringToPorts(stringports):  # Translates nmap-style port specs to a list of ports
         ports = []
         for port in stringports:
@@ -34,12 +38,12 @@ def loadServiceDefs():
         stringEnd = rawMatch[2:].find(delim) + 2
         return rawMatch[2:stringEnd], rawMatch[stringEnd + 2:].rstrip('\n')
 
-    def stringToProbe(rawProbe, debug = False):  # Cleans up the probe string in nmap-service-probes
+    def stringToProbe(rawProbe, debug=False):  # Cleans up the probe string in nmap-service-probes
         assert rawProbe[0] == 'q'
         delim = rawProbe[1]
         stringEnd = rawProbe[2:].find(delim) + 2
         newVal = rawProbe[2:stringEnd]
-        newVal = newVal.replace(r"\0",r"\x00")
+        newVal = newVal.replace(r"\0", r"\x00")
         returnVal = literal_eval('"' + newVal.replace('"', '\\"') + '"').encode('latin-1')
         if debug:
             print(newVal)
@@ -67,35 +71,43 @@ def loadServiceDefs():
         while x < len(data):
             if data[x][0:6] == 'Probe ':
                 probe = data[x].split(maxsplit=3)  # Determine protocol, probe name, and string sent as probe
-                if probe[2] != "oracle-tns":
-                    probeQuery = stringToProbe(probe[3])
-                else:
-                    probeQuery = stringToProbe(probe[3],True)
+                probeQuery = stringToProbe(probe[3])
                 x += 1
                 matches = []
                 ports = []
                 sslports = []
                 while x < len(data) and data[x][0:6] != 'Probe ':  # Everything in here applies to a single probe
-                    if data[x][0:6] == 'match ':  # Determine what we are supposed to match
-                        rawmatch = data[x].split(maxsplit=2)
-                        pattern, version = stringToMatch(rawmatch[2])
-                        matches.append(Match(rawmatch[1], pattern, version, softmatch=False))
-                    elif data[x][0:10] == 'softmatch ':  # Same as above but for soft match
-                        rawmatch = data[x].split(maxsplit=2)
-                        pattern, version = stringToMatch(rawmatch[2])
-                        matches.append(Match(rawmatch[1], pattern, version, softmatch=True))
-                    elif data[x][0:6] == 'ports ':  # Determine applicable ports if specified
-                        ports = stringToPorts(data[x][6:].rstrip('\n').split(','))
-                    elif data[x][0:9] == 'sslports ':  # Determine applicable SSL ports if specified
-                        sslports = stringToPorts(data[x][9:].rstrip('\n').split(','))
+                    if not onlyMatch:
+                        checkedMatch = True
+                    else:
+                        checkedMatch = False
+                        for check in onlyMatch:
+                            if check in data[x]:
+                                checkedMatch = True
+                                break
+                    if checkedMatch:
+                        if data[x][0:6] == 'match ':  # Determine what we are supposed to match
+                            rawmatch = data[x].split(maxsplit=2)
+                            pattern, version = stringToMatch(rawmatch[2])
+                            matches.append(Match(rawmatch[1], pattern, version, softmatch=False))
+                        elif data[x][0:10] == 'softmatch ':  # Same as above but for soft match
+                            rawmatch = data[x].split(maxsplit=2)
+                            pattern, version = stringToMatch(rawmatch[2])
+                            matches.append(Match(rawmatch[1], pattern, version, softmatch=True))
+                        elif data[x][0:6] == 'ports ':  # Determine applicable ports if specified
+                            ports = stringToPorts(data[x][6:].rstrip('\n').split(','))
+                        elif data[x][0:9] == 'sslports ':  # Determine applicable SSL ports if specified
+                            sslports = stringToPorts(data[x][9:].rstrip('\n').split(','))
                     x += 1
-                probes.append(Probe(probe[1], probe[2], probeQuery, matches, ports, sslports))
+                if matches:
+                    probes.append(Probe(probe[1], probe[2], probeQuery, matches, ports, sslports))
             x += 1
-    return probes
+    if probes:
+        return probes
+    raise RuntimeError("No probes loaded")
 
 
 def createConfig(probes):
-
     def sortFunc(e):
         return e["port"]
 
@@ -127,7 +139,7 @@ def saveConfig(config):
     f = open(filename, "w")
     for x in config:
         pigeonList.append({"probe": str(x["probe"]), "match": str(x["match"]), "port": str(x["port"])})
-    f.write(json.dumps(pigeonList))
+    f.write(json.dumps(pigeonList).replace("},", "},\n"))
     f.close()
 
 
@@ -140,14 +152,20 @@ def readConfig(probes):
         rawData = f.read()
         pigeonStrings = json.loads(rawData)  # The config contains dictionaries of strings.
         for x in pigeonStrings:  # We need to convert them to dictionaries of actual probes and matches.
-            for candidateProbe in probes:  # This has unpredictable behavior if a match can't be found.
+            for candidateProbe in probes:
+                probe = None
                 if x["probe"] == str(candidateProbe):
                     probe = candidateProbe
                     break
+            if not probe:
+                raise RuntimeError("Config File Error: No matching probes")
+            match = None
             for candidateMatch in probe.matches:
                 if x["match"] == str(candidateMatch):
                     match = candidateMatch
                     break
+            if not match:
+                raise RuntimeError("Config File Error: No matching responses")
             port = int(x["port"])
             pigeonList.append({"probe": probe, "match": match, "port": port})
     return pigeonList
@@ -155,9 +173,10 @@ def readConfig(probes):
 
 def makeClayPigeon(probe, match, port):  # Created for multiProcessing
     try:
-      return ClayPigeon(probe, match, port)
+        return ClayPigeon(probe, match, port)
     except KeyboardInterrupt:
         pass
+
 
 if __name__ == '__main__':
     probes = loadServiceDefs()
@@ -173,6 +192,4 @@ if __name__ == '__main__':
         proc = Process(target=makeClayPigeon, args=(probe, match, port,))
         z.append(proc)
         z[x].start()
-        sleep(.01) # Makes pigeons start in order so the list appears sorted
-
-
+        sleep(.01)  # Makes pigeons start in order so the list appears sorted
